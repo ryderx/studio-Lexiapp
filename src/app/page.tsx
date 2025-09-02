@@ -10,11 +10,10 @@ import { ResultContextDialog } from '@/components/lexi-compare/ResultContextDial
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { parseFileContent } from '@/lib/parser';
 import { exportToCsv } from '@/lib/exporter';
-import type { UploadedFile, ComparisonResult, ResultCell } from '@/types';
+import type { UploadedFile, ComparisonResult } from '@/types';
 import { FileText, Tags, Rows3, Loader2, Download } from 'lucide-react';
 
 const IconWrapper: FC<{ children: React.ReactNode }> = ({ children }) => (

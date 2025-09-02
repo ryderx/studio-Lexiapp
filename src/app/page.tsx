@@ -11,10 +11,10 @@ import { ResultContextDialog } from '@/components/lexi-compare/ResultContextDial
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { parseFileContent } from '@/lib/parser';
 import { exportToCsv } from '@/lib/exporter';
 import { Search, Download, FileText, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { parseFile } from '@/ai/flows/parser-flow';
 
 type DialogData = {
   file: UploadedFile;
@@ -82,9 +82,24 @@ export default function HomePage() {
         setIsProcessing(true);
         setProgress(50);
         try {
-            const terms = await parseFileContent(masterFile.file);
-            setExtractedTerms(terms);
-            setSelectedTerms(new Set(terms));
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const dataUri = e.target?.result as string;
+                if(dataUri) {
+                    const terms = await parseFile({
+                        fileName: masterFile.file.name,
+                        fileType: masterFile.file.type,
+                        fileDataUri: dataUri,
+                    });
+                    setExtractedTerms(terms);
+                    setSelectedTerms(new Set(terms));
+                }
+            };
+            reader.onerror = (error) => {
+                throw new Error("Could not read file for parsing.");
+            }
+            reader.readAsDataURL(masterFile.file);
+
         } catch (error) {
             toast({
                 variant: 'destructive',

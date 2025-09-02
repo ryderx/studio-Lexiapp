@@ -50,7 +50,7 @@ export default function Home() {
       try {
         const content = await masterFile.file.text();
         masterFile.content = content;
-        const terms = parseFileContent(content, masterFile.file.type);
+        const terms = await parseFileContent(masterFile.file);
         setExtractedTerms(terms);
         setSelectedTerms(new Set(terms));
       } catch (error) {

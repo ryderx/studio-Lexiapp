@@ -84,8 +84,8 @@ export default function HomePage() {
         try {
             const reader = new FileReader();
             reader.onload = async (e) => {
-                const dataUri = e.target?.result as string;
-                if(dataUri) {
+                if (e.target && typeof e.target.result === 'string') {
+                    const dataUri = e.target.result;
                     const terms = await parseFile({
                         fileName: masterFile.file.name,
                         fileType: masterFile.file.type,

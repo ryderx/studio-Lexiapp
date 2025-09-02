@@ -24,7 +24,8 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
+    // This is to fix the 'Module not found: Can't resolve 'canvas'' error
     config.resolve.alias.canvas = false;
     return config;
   },

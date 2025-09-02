@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Checkbox } from '@/components/ui/checkbox';
@@ -6,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 interface TermSelectorProps {
   terms: string[];
@@ -13,9 +15,10 @@ interface TermSelectorProps {
   onSelectionChange: (newSelection: Set<string>) => void;
   manualTerms: string;
   onManualTermsChange: (value: string) => void;
+  disabled?: boolean;
 }
 
-export function TermSelector({ terms, selectedTerms, onSelectionChange, manualTerms, onManualTermsChange }: TermSelectorProps) {
+export function TermSelector({ terms, selectedTerms, onSelectionChange, manualTerms, onManualTermsChange, disabled = false }: TermSelectorProps) {
   const handleToggleTerm = (term: string) => {
     const newSelection = new Set(selectedTerms);
     if (newSelection.has(term)) {
@@ -35,7 +38,7 @@ export function TermSelector({ terms, selectedTerms, onSelectionChange, manualTe
   };
 
   return (
-    <div className="space-y-4">
+    <div className={cn("space-y-4", disabled && "opacity-50 pointer-events-none")}>
       <div>
         <Label htmlFor="manual-terms">Add Manual Terms (comma-separated)</Label>
         <Input 

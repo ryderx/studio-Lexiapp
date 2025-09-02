@@ -1,18 +1,10 @@
 import mammoth from 'mammoth';
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+import pdf from 'pdf-parse/lib/pdf-parse.entry';
 
 const extractTextFromPdf = async (file: File): Promise<string> => {
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-  let content = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const textContent = await page.getTextContent();
-    content += textContent.items.map((item: any) => item.str).join(' ');
-  }
-  return content;
+  const data = await pdf(Buffer.from(arrayBuffer));
+  return data.text;
 };
 
 const extractTextFromDocx = async (file: File): Promise<string> => {

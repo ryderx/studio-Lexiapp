@@ -41,6 +41,7 @@ const parseFileFlow = ai.defineFlow(
             } else if (fileType.includes('csv') || fileType.includes('plain')) {
                 content = buffer.toString('utf-8');
             } else if (fileType.includes('pdf')) {
+                // Correctly convert Buffer to ArrayBuffer for pdfjs-dist
                 const arrayBuffer = new ArrayBuffer(buffer.length);
                 const uint8Array = new Uint8Array(arrayBuffer);
                 for (let i = 0; i < buffer.length; ++i) {

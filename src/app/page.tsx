@@ -37,32 +37,47 @@ export default function HomePage() {
   const handleFileUpload = async (uploadedFiles: File[]) => {
     setIsProcessing(true);
     setProgress(0);
-    const newFiles: UploadedFile[] = [];
-    for (let i = 0; i < uploadedFiles.length; i++) {
-        const file = uploadedFiles[i];
+    const newFiles: UploadedFile[] = await Promise.all(
+      uploadedFiles.map(async (file, i) => {
         try {
-            // Reading content here can be slow for large files and is not needed for all file types immediately.
-            // We will read content on-demand when needed. For now, just store the file object.
-            const content = await file.text(); // Keep this for immediate text-based operations like comparison
-            newFiles.push({
-                id: `${file.name}-${Date.now()}`,
-                file,
-                content: content,
-            });
+          const isTextBased = file.type.startsWith('text/') || file.type.includes('json') || file.type.includes('csv');
+          const content = isTextBased ? await file.text() : '';
+          setProgress(((i + 1) / uploadedFiles.length) * 50);
+          return {
+            id: `${file.name}-${Date.now()}`,
+            file,
+            content: content, 
+          };
         } catch (error) {
-            console.error(`Error processing file ${file.name}:`, error);
-            toast({
-                variant: 'destructive',
-                title: 'File Process Error',
-                description: `Could not process ${file.name}. It might be corrupted or an unsupported format.`,
-            });
+          console.error(`Error processing file ${file.name}:`, error);
+          toast({
+            variant: 'destructive',
+            title: 'File Process Error',
+            description: `Could not process ${file.name}.`,
+          });
+          return null;
         }
-        setProgress(((i + 1) / uploadedFiles.length) * 100);
-    }
-    setFiles(prev => [...prev, ...newFiles]);
+      })
+    );
+  
+    const validFiles = newFiles.filter((f): f is UploadedFile => f !== null);
+  
+    // Sequentially read and update content for all files to ensure UI is responsive
+    const updatedFiles = await Promise.all(
+      [...files, ...validFiles].map(async (uploadedFile) => {
+        if (!uploadedFile.content) {
+          const content = await uploadedFile.file.text();
+          return { ...uploadedFile, content };
+        }
+        return uploadedFile;
+      })
+    );
+    
+    setFiles(prev => [...prev, ...validFiles]);
+    setProgress(100);
     setIsProcessing(false);
   };
-
+  
   const handleDeleteFile = (id: string) => {
     setFiles(prev => prev.filter(f => f.id !== id));
     if (id === masterFileId) {
@@ -95,19 +110,25 @@ export default function HomePage() {
                     });
                     setExtractedTerms(terms);
                     setSelectedTerms(new Set(terms));
+                } else {
+                    throw new Error("Failed to read file as Data URL.");
                 }
             };
             reader.onerror = (error) => {
+                console.error("FileReader Error:", error);
                 throw new Error("Could not read file for parsing.");
             }
             reader.readAsDataURL(masterFile.file);
 
         } catch (error) {
+            console.error("Term extraction error:", error);
             toast({
                 variant: 'destructive',
                 title: 'Term Extraction Error',
-                description: `Could not parse terms from ${masterFile.file.name}.`,
+                description: `Could not parse terms from ${masterFile.file.name}. Ensure it's not corrupted.`,
             });
+            setExtractedTerms([]);
+            setSelectedTerms(new Set());
         } finally {
             setIsProcessing(false);
             setProgress(100);
@@ -122,7 +143,7 @@ export default function HomePage() {
     return [...new Set([...Array.from(selectedTerms), ...manual])];
   }, [selectedTerms, manualTerms]);
 
-  const handleCompare = () => {
+  const handleCompare = async () => {
     if (allTerms.length === 0 || files.length < 1) {
       toast({
         variant: 'destructive',
@@ -142,33 +163,50 @@ export default function HomePage() {
 
     setIsProcessing(true);
     setProgress(0);
+
+    // Lazily read content for comparison
+    const filesWithContent = await Promise.all(
+        files.map(async (file) => {
+            if (file.content) {
+                return file;
+            }
+            try {
+                const content = await file.file.text();
+                return { ...file, content };
+            } catch (e) {
+                console.error(`Failed to read content of ${file.file.name}`, e);
+                return { ...file, content: "" }; // Fallback to empty content
+            }
+        })
+    );
+    setFiles(filesWithContent);
     
     // Use a timeout to allow the UI to update before blocking the main thread
     setTimeout(() => {
-        const comparisonFiles = files;
         const matrix = new Map<string, ResultCell>();
         
-        comparisonFiles.forEach((file, fileIndex) => {
+        filesWithContent.forEach((file, fileIndex) => {
           allTerms.forEach(term => {
             const key = `${term}-${file.id}`;
-            const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
             const matches: { lineNumber: number; context: string }[] = [];
-            const lines = file.content.split('\n');
             
-            lines.forEach((line, index) => {
-              if(line.toLowerCase().includes(term.toLowerCase())) {
-                  matches.push({ lineNumber: index + 1, context: line });
-              }
-            });
+            if (file.content) {
+              const lines = file.content.split('\n');
+              lines.forEach((line, index) => {
+                if(line.toLowerCase().includes(term.toLowerCase())) {
+                    matches.push({ lineNumber: index + 1, context: line });
+                }
+              });
+            }
             
             matrix.set(key, { found: matches.length > 0, matches });
           });
-          setProgress(((fileIndex + 1) / comparisonFiles.length) * 100);
+          setProgress(((fileIndex + 1) / filesWithContent.length) * 100);
         });
 
         setComparisonResult({
           terms: allTerms,
-          files: comparisonFiles,
+          files: filesWithContent,
           matrix,
         });
         setIsProcessing(false);
@@ -276,3 +314,5 @@ export default function HomePage() {
     </main>
   );
 }
+
+    

@@ -33,6 +33,10 @@ const parseFileFlow = ai.defineFlow(
     async ({ fileType, fileDataUri }) => {
         let content = '';
         const base64Data = fileDataUri.split(',')[1];
+        if (!base64Data) {
+            console.error("Invalid data URI provided.");
+            return [];
+        }
         const buffer = Buffer.from(base64Data, 'base64');
 
         try {
@@ -41,12 +45,9 @@ const parseFileFlow = ai.defineFlow(
             } else if (fileType.includes('csv') || fileType.includes('plain')) {
                 content = buffer.toString('utf-8');
             } else if (fileType.includes('pdf')) {
-                // Correctly convert Buffer to ArrayBuffer for pdfjs-dist
                 const arrayBuffer = new ArrayBuffer(buffer.length);
                 const uint8Array = new Uint8Array(arrayBuffer);
-                for (let i = 0; i < buffer.length; ++i) {
-                    uint8Array[i] = buffer[i];
-                }
+                buffer.copy(uint8Array);
 
                 const pdfDoc = await getDocument({ data: uint8Array }).promise;
                 const numPages = pdfDoc.numPages;
@@ -65,17 +66,22 @@ const parseFileFlow = ai.defineFlow(
 
             let terms: string[] = [];
             if (fileType.includes('json')) {
-                const jsonData = JSON.parse(content);
-                const extractStrings = (obj: any) => {
-                    for (const key in obj) {
-                        if (typeof obj[key] === 'string') {
-                            terms.push(...obj[key].split(/[\s,.;:()"]+/));
-                        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-                            extractStrings(obj[key]);
+                try {
+                    const jsonData = JSON.parse(content);
+                    const extractStrings = (obj: any) => {
+                        for (const key in obj) {
+                            if (typeof obj[key] === 'string') {
+                                terms.push(...obj[key].split(/[\s,.;:()"]+/));
+                            } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+                                extractStrings(obj[key]);
+                            }
                         }
-                    }
-                };
-                extractStrings(jsonData);
+                    };
+                    extractStrings(jsonData);
+                } catch (e) {
+                    console.error("Failed to parse JSON, falling back to text split", e);
+                    terms = content.split(/[\s,.;:()"]+/);
+                }
             } else {
                 terms = content.split(/[\s,.;:()"]+/);
             }
@@ -96,3 +102,5 @@ const parseFileFlow = ai.defineFlow(
         }
     }
 );
+
+    

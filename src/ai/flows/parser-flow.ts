@@ -42,11 +42,7 @@ const parseFileFlow = ai.defineFlow(
                 content = buffer.toString('utf-8');
             } else if (fileType.includes('pdf')) {
                 // Correctly convert Buffer to ArrayBuffer for pdfjs-dist
-                const arrayBuffer = new ArrayBuffer(buffer.length);
-                const view = new Uint8Array(arrayBuffer);
-                for (let i = 0; i < buffer.length; ++i) {
-                    view[i] = buffer[i];
-                }
+                const arrayBuffer = new Uint8Array(buffer).buffer;
 
                 const doc = await getDocument({ data: arrayBuffer }).promise;
                 const numPages = doc.numPages;

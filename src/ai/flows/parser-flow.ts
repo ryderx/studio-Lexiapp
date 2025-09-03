@@ -10,7 +10,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import mammoth from 'mammoth';
-import pdf from 'pdf-parse';
+import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 const ParseFileInputSchema = z.object({
     fileName: z.string().describe("The name of the file."),
@@ -41,8 +41,22 @@ const parseFileFlow = ai.defineFlow(
             } else if (fileType.includes('csv') || fileType.includes('plain')) {
                 content = buffer.toString('utf-8');
             } else if (fileType.includes('pdf')) {
-                const data = await pdf(buffer);
-                content = data.text;
+                const arrayBuffer = new ArrayBuffer(buffer.length);
+                const uint8Array = new Uint8Array(arrayBuffer);
+                for (let i = 0; i < buffer.length; ++i) {
+                    uint8Array[i] = buffer[i];
+                }
+
+                const pdfDoc = await getDocument({ data: uint8Array }).promise;
+                const numPages = pdfDoc.numPages;
+                let pdfText = '';
+
+                for (let i = 1; i <= numPages; i++) {
+                    const page = await pdfDoc.getPage(i);
+                    const textContent = await page.getTextContent();
+                    pdfText += textContent.items.map(item => ('str' in item ? item.str : '')).join(' ');
+                }
+                content = pdfText;
             } else if (fileType.includes('msword') || fileType.includes('wordprocessingml.document')) {
                 const result = await mammoth.extractRawText({ buffer });
                 content = result.value;

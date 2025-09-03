@@ -41,18 +41,20 @@ export default function HomePage() {
     for (let i = 0; i < uploadedFiles.length; i++) {
         const file = uploadedFiles[i];
         try {
-            const content = await file.text();
+            // Reading content here can be slow for large files and is not needed for all file types immediately.
+            // We will read content on-demand when needed. For now, just store the file object.
+            const content = await file.text(); // Keep this for immediate text-based operations like comparison
             newFiles.push({
                 id: `${file.name}-${Date.now()}`,
                 file,
-                content,
+                content: content,
             });
         } catch (error) {
-            console.error(`Error reading file ${file.name}:`, error);
+            console.error(`Error processing file ${file.name}:`, error);
             toast({
                 variant: 'destructive',
-                title: 'File Read Error',
-                description: `Could not read content from ${file.name}.`,
+                title: 'File Process Error',
+                description: `Could not process ${file.name}. It might be corrupted or an unsupported format.`,
             });
         }
         setProgress(((i + 1) / uploadedFiles.length) * 100);

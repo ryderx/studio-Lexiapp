@@ -36,7 +36,6 @@ export function FileUploader({ onFileUpload }: FileUploaderProps) {
       'text/plain': ['.txt'],
       'text/csv': ['.csv'],
       'application/json': ['.json'],
-      'application/pdf': ['.pdf'],
       'application/msword': ['.doc'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
     },
@@ -57,7 +56,7 @@ export function FileUploader({ onFileUpload }: FileUploaderProps) {
         <p className="font-semibold">
           {isDragActive ? 'Drop the files here...' : 'Drag & drop files here, or click to select'}
         </p>
-        <p className="text-xs">Supported file types: TXT, CSV, JSON, PDF, DOC, DOCX</p>
+        <p className="text-xs">Supported file types: TXT, CSV, JSON, DOC, DOCX</p>
       </div>
     </div>
   );

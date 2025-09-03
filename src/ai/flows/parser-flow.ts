@@ -10,10 +10,6 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import mammoth from 'mammoth';
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
-
-// Set the worker source to ensure pdfjs-dist can process files in a Node.js environment.
-GlobalWorkerOptions.workerSrc = `../../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs`;
 
 const ParseFileInputSchema = z.object({
     fileName: z.string().describe("The name of the file."),
@@ -47,17 +43,6 @@ const parseFileFlow = ai.defineFlow(
                 content = buffer.toString('utf-8');
             } else if (fileType.includes('csv') || fileType.includes('plain')) {
                 content = buffer.toString('utf-8');
-            } else if (fileType.includes('pdf')) {
-                const pdfDoc = await getDocument({ data: buffer }).promise;
-                const numPages = pdfDoc.numPages;
-                let pdfText = '';
-
-                for (let i = 1; i <= numPages; i++) {
-                    const page = await pdfDoc.getPage(i);
-                    const textContent = await page.getTextContent();
-                    pdfText += textContent.items.map(item => ('str' in item ? item.str : '')).join(' ');
-                }
-                content = pdfText;
             } else if (fileType.includes('msword') || fileType.includes('wordprocessingml.document')) {
                 const result = await mammoth.extractRawText({ buffer });
                 content = result.value;

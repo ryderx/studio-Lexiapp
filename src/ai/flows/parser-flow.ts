@@ -10,7 +10,10 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import mammoth from 'mammoth';
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist/legacy/build/pdf.mjs';
+
+// Set the worker source to ensure pdfjs-dist can process files in a Node.js environment.
+GlobalWorkerOptions.workerSrc = `../../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs`;
 
 const ParseFileInputSchema = z.object({
     fileName: z.string().describe("The name of the file."),
@@ -45,11 +48,7 @@ const parseFileFlow = ai.defineFlow(
             } else if (fileType.includes('csv') || fileType.includes('plain')) {
                 content = buffer.toString('utf-8');
             } else if (fileType.includes('pdf')) {
-                const arrayBuffer = new ArrayBuffer(buffer.length);
-                const uint8Array = new Uint8Array(arrayBuffer);
-                buffer.copy(uint8Array);
-
-                const pdfDoc = await getDocument({ data: uint8Array }).promise;
+                const pdfDoc = await getDocument({ data: buffer }).promise;
                 const numPages = pdfDoc.numPages;
                 let pdfText = '';
 
@@ -102,5 +101,3 @@ const parseFileFlow = ai.defineFlow(
         }
     }
 );
-
-    

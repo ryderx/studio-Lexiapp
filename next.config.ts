@@ -24,6 +24,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    // This is required to fix a cross-origin error in the development environment.
+    allowedDevOrigins: ['https://*.cloudworkstations.dev'],
+  },
+  // This is required to prevent the server from restarting in a loop in the development environment.
+  watchOptions: {
+    ignored: ['**/node_modules'],
+  },
 };
 
 export default nextConfig;
